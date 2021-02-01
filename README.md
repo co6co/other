@@ -1,2 +1,3 @@
 # other
-use 
+H31DHTMgr	
+	DHT 管理
