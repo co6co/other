@@ -120,8 +120,7 @@ namespace H31SQLLibrary
             {
                 conn.Close();
                 throw;
-            }
-            return null;
+            } 
         }
 
         /// <summary>

@@ -149,7 +149,7 @@ namespace H31DHTMgr
             catch (System.Exception ex)
             {
                 //¥ÌŒÛ»’÷æº«¬º 
-                //H31Debug.PrintLn("TorrentFile:" + ex.StackTrace);
+                H31Debug.PrintLn("TorrentFile:" + ex.StackTrace);
             }
         }
 

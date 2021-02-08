@@ -9,18 +9,51 @@ using System.Threading;
 
 namespace H31DHTMgr
 {
+    internal class TorrentServer
+    {
+        public string UrlFormat { get; set; }
+        public int Timeout { get; set; }
+
+        public string GetUrlStr(string hashName)
+        {
+            //有三个参数
+            if (UrlFormat.IndexOf("{2}", StringComparison.Ordinal) > 0) return string.Format(UrlFormat, hashName.Substring(0, 2), hashName.Substring(hashName.Length - 2, 2), hashName);
+            // //有两个参数
+            else if ((UrlFormat.IndexOf("{1}", StringComparison.Ordinal) > 0)) return string.Format(UrlFormat, hashName.Substring(0, 2),    hashName);
+            //有一个参数
+            else if ((UrlFormat.IndexOf("{0}", StringComparison.Ordinal) > 0)) return string.Format(UrlFormat, hashName);
+            return UrlFormat;
+        }
+    }
+
     public class H31Down
     {
         private string pathname=string.Empty;
         public bool webgood = true;
         private int downwebpos = 0;
-        private string[] m_strURLList = new string[4];
-        private int[] m_timeoutList=new int[4];
+       
+     
+        private List<TorrentServer> _serverList;
+        private Random _random;
+        public H31Down()
+        {
+            _serverList=new List<TorrentServer>();
+            //_serverList.Add(new TorrentServer() { Timeout = 300, UrlFormat = "https://zoink.it/torrent/{0}.torrent" });//过时
+            _serverList.Add(new TorrentServer() { Timeout = 500, UrlFormat = "http://bt.box.n0808.com/{0}/{1}/{2}.torrent" });
+            _serverList.Add(new TorrentServer() { Timeout = 1000, UrlFormat = "http://torrage.com/torrent/{0}.torrent" });
+            _serverList.Add(new TorrentServer() { Timeout = 1000, UrlFormat = "http://torcache.net/torrent/{0}.torrent" });
+            _random = new Random(DateTime.Now.Millisecond);
+        }
+
+        private int GetRandomServer()
+        {
+            return _random.Next(0, _serverList.Count);
+        }
 
         #region 下载到内存中直接使用
         public byte[] DownLoadFileByHashToByte(string hashname)
         {
-            byte[] res=null;
+            byte[] res = null;
             try
             {
                 //先检查本地有没有文件，如果有直接读取本地，没有再从网络上下载
@@ -36,29 +69,17 @@ namespace H31DHTMgr
                         return res;
                     }
                 }
-                m_strURLList[0] = string.Format("https://zoink.it/torrent/{0}.torrent", hashname);
-                m_strURLList[1] = string.Format("http://bt.box.n0808.com/{0}/{1}/{2}.torrent", hashname.Substring(0, 2), hashname.Substring(hashname.Length - 2, 2), hashname);
-                m_strURLList[2] = string.Format("http://torrage.com/torrent/{0}.torrent", hashname);
-                m_strURLList[3] = string.Format("http://torcache.net/torrent/{0}.torrent", hashname);
-            
-
-                m_timeoutList[0] = 300;
-                m_timeoutList[1] = 300;
-                m_timeoutList[2] = 700;
-                m_timeoutList[3] = 700;
+                
                 //随机从前面两个网站中的一个下载,因为前面两个网站速度快些
-                downwebpos = (downwebpos + 1) % 2;
+                downwebpos = GetRandomServer();
                 //res = DownLoadFileToSaveByte(m_strURLList[downwebpos]);
 
                 //随机打乱三个网址顺序下载,防止从一个网站下载过多被封
-                res = DownLoadFileToSaveByte(m_strURLList[downwebpos], m_timeoutList[downwebpos]);
+                res = DownLoadFileToSaveByte(_serverList[downwebpos].GetUrlStr(hashname), _serverList[downwebpos].Timeout );
                 if (res == null)
                 {
-                    //res = DownLoadFileToSaveByte(m_strURLList[(downwebpos + 1) % 2]);
-                    //if (res == null)
-                    {
-                        res = DownLoadFileToSaveByte(m_strURLList[2], m_timeoutList[2]);
-                    }
+                    downwebpos = GetRandomServer();
+                    res = DownLoadFileToSaveByte(_serverList[downwebpos].GetUrlStr(hashname), _serverList[downwebpos].Timeout); 
                 }
 
                 return res;
@@ -110,8 +131,8 @@ namespace H31DHTMgr
             }
             catch (Exception e)
             {
-                Int32 ticktime3 = System.Environment.TickCount;
-                //H31Debug.PrintLn("下载失败" + strURL + ":" +  (ticktime3 - ticktime1).ToString());
+                 Int32 ticktime3 = System.Environment.TickCount;
+                 H31Debug.PrintLn("下载失败" + strURL + ":" +  (ticktime3 - ticktime1).ToString()+"err:"+e.Message);
                 return null;
             }
         }
@@ -145,16 +166,8 @@ namespace H31DHTMgr
                     Directory.CreateDirectory(pathname1);
                 }
                 string filename = string.Format("{0}\\{1}\\{2}.torrent", pathname, hashname.Substring(hashname.Length - 2, 2), hashname);
-                if (File.Exists(filename))
-                    return 1;
-                m_strURLList[3] = string.Format("http://torcache.net/torrent/{0}.torrent", hashname);
-                m_strURLList[2] = string.Format("https://zoink.it/torrent/{0}.torrent", hashname);
-                m_strURLList[1] = string.Format("http://bt.box.n0808.com/{0}/{1}/{2}.torrent", hashname.Substring(0,2), hashname.Substring(hashname.Length-2,2), hashname);
-                m_strURLList[0] = string.Format("http://torrage.com/torrent/{0}.torrent", hashname);
-                m_timeoutList[0] = 500;
-                m_timeoutList[1] = 500;
-                m_timeoutList[2] = 1000;
-                m_timeoutList[3] = 1000;
+                if (File.Exists(filename))  return 1;
+               
  
                 //随机从一个网址下载
                 //downwebpos = (downwebpos + 1) % 2;
@@ -164,16 +177,10 @@ namespace H31DHTMgr
                 //随机打乱三个网址顺序下载,防止从一个网站下载过多被封
                 downwebpos = (downwebpos + 1);
                 //从三种网址一一测试下载
-                if (DownLoadFileToSaveFile(m_strURLList[(downwebpos) % 4], filename, m_timeoutList[(downwebpos) % 4]) == 1)
-                    return 1;
-                if (DownLoadFileToSaveFile(m_strURLList[(downwebpos + 1) % 4], filename, m_timeoutList[(downwebpos + 1) % 4]) == 1)
-                    return 1;
-
-                if (DownLoadFileToSaveFile(m_strURLList[(downwebpos + 2) % 4], filename, m_timeoutList[(downwebpos + 2) % 4]) == 1)
-                    return 1;
-                if (DownLoadFileToSaveFile(m_strURLList[(downwebpos + 3) % 4], filename, m_timeoutList[(downwebpos + 3) % 4]) == 1)
-                    return 1;
-
+                foreach (var torrentServer in _serverList)
+                {
+                    if (1==DownLoadFileToSaveFile(torrentServer.GetUrlStr(filename), filename, torrentServer.Timeout)) return 1;
+                } 
                 return 0;
             }
             catch (Exception e)

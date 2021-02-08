@@ -49,6 +49,7 @@ namespace H31SQLLibrary
             {
                 case H31DBSQL.DatabaseTypes.Access:
                     h31dbsql.ConnectionString = "Provider = Microsoft.Ace.OleDb.12.0; " + "data source=H31DHT.accdb;Persist Security Info=False;";
+                    
                      /*h31dbsql.ConnectionString = "Provider=Microsoft.Jet.OLEDB.4.0;Persist Security Info=true;Data Source="
                         //+ HttpContext.Current.Request.PhysicalApplicationPath
                         + connstr;*/
