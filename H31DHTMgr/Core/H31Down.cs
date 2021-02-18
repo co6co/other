@@ -60,12 +60,12 @@ namespace H31DHTMgr
                 string filename = string.Format("{0}//{1}.torrent", pathname, hashname);
                 if (File.Exists(filename))
                 {
-                    System.IO.FileStream TorrentFile = new System.IO.FileStream(filename, System.IO.FileMode.Open);
-                    if (TorrentFile.Length > 0)
+                    System.IO.FileStream torrentFile = new System.IO.FileStream(filename, System.IO.FileMode.Open);
+                    if (torrentFile.Length > 0)
                     {
-                        res = new byte[TorrentFile.Length];
-                        TorrentFile.Read(res, 0, res.Length);
-                        TorrentFile.Close();
+                        res = new byte[torrentFile.Length];
+                        torrentFile.Read(res, 0, res.Length);
+                        torrentFile.Close();
                         return res;
                     }
                 }
